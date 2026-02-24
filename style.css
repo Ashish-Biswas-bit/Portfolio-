@@ -920,7 +920,7 @@ footer {
         font-size: 2.2rem !important;
     }
 
-    .skills-grid {
-        grid-template-columns: repeat(3, 1fr) !important;
-    }
+	.skills-grid {
+		grid-template-columns: repeat(3, 1fr) !important;
+	}
 }

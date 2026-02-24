@@ -34,7 +34,7 @@
 			<div class="hero-info">
 				<span class="greeting-badge">Hi, I'm</span>
 				<h1 class="hero-title"><span class="highlight">ASHISH BISWAS</span></h1>
-				<h2 class="hero-role">Web, Software & 2D Game Developer</h2>
+				<h2 class="hero-role" id="hero-role"></h2>
 				<p class="hero-desc">I create modern, responsive websites, desktop apps, and engaging 2D web games that help businesses grow and stand out online.</p>
 			<div class="hero-actions">
 					<a href="#projects" class="cta-btn" id="view-projects-btn">View Projects</a>
@@ -49,7 +49,7 @@
 	</section>
 
 	<!-- Projects Section -->
-	<section id="projects" class="projects-section">
+	<section id="projects" class="projects-section fade-in-up">
 		<div class="projects-header">
 			<h2>Projects</h2>
 			<button class="see-all-btn" onclick="showAllProjects()">See All</button>
@@ -81,7 +81,7 @@
 	</div>
 
 	<!-- Skills Section -->
-	<section id="skills" class="skills-section">
+	<section id="skills" class="skills-section fade-in-up">
 		<h2>Skills</h2>
 		<div class="skills-grid">
 			<div class="skill-card">
@@ -136,7 +136,7 @@
 	</section>
 
 	<!-- Contact Section -->
-	<section id="contact" class="contact-section">
+	<section id="contact" class="contact-section fade-in-up">
 		<h2>Contact</h2>
 		<div class="contact-info">
 			<div class="contact-row">
@@ -173,10 +173,48 @@
 	</section>
 
 	<!-- Footer -->
-	<footer>
+	<footer class="fade-in-up">
 		<p>&copy; 2026 Ashish Biswas. All rights reserved.</p>
 	</footer>
 
 	<script src="script.js"></script>
+	<script>
+	// Typewriter animation for hero-role
+	document.addEventListener('DOMContentLoaded', function() {
+		const roles = [
+			'Web Developer',
+			'Software Developer',
+			'2D Game Developer',
+			'Full Stack Developer',
+			'Tech Problem Solver'
+		];
+		const el = document.getElementById('hero-role');
+		let roleIdx = 0, charIdx = 0, isDeleting = false;
+		function type() {
+			const current = roles[roleIdx];
+			if (isDeleting) {
+				charIdx--;
+				el.textContent = current.substring(0, charIdx);
+				if (charIdx === 0) {
+					isDeleting = false;
+					roleIdx = (roleIdx + 1) % roles.length;
+					setTimeout(type, 700);
+				} else {
+					setTimeout(type, 40);
+				}
+			} else {
+				charIdx++;
+				el.textContent = current.substring(0, charIdx);
+				if (charIdx === current.length) {
+					isDeleting = true;
+					setTimeout(type, 1200);
+				} else {
+					setTimeout(type, 80);
+				}
+			}
+		}
+		type();
+	});
+	</script>
 </body>
 </html>

@@ -1,3 +1,17 @@
+// Fade-in on scroll for all main sections
+document.addEventListener('DOMContentLoaded', function() {
+	const fadeEls = document.querySelectorAll('.fade-in-up');
+	const observer = new window.IntersectionObserver((entries) => {
+		entries.forEach(entry => {
+			if (entry.isIntersecting) {
+				entry.target.classList.add('in-view');
+			} else {
+				entry.target.classList.remove('in-view');
+			}
+		});
+	}, { threshold: 0.15 });
+	fadeEls.forEach(el => observer.observe(el));
+});
 function showAllProjects() {
 	const modal = document.getElementById('project-modal');
 	const body = document.getElementById('modal-body');

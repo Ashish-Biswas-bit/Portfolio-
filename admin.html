@@ -37,8 +37,11 @@
             </div>
             <nav class="sidebar-nav">
                 <a href="#" class="nav-item active" data-section="hero" onclick="switchSection('hero', this)">Hero Section</a>
+                <a href="#" class="nav-item" data-section="about" onclick="switchSection('about', this)">About</a>
+                <a href="#" class="nav-item" data-section="services" onclick="switchSection('services', this)">Services</a>
                 <a href="#" class="nav-item" data-section="projects" onclick="switchSection('projects', this)">Projects</a>
                 <a href="#" class="nav-item" data-section="skills" onclick="switchSection('skills', this)">Skills</a>
+                <a href="#" class="nav-item" data-section="testimonials" onclick="switchSection('testimonials', this)">Testimonials</a>
                 <a href="#" class="nav-item" data-section="contact" onclick="switchSection('contact', this)">Contact</a>
                 <a href="#" class="nav-item" data-section="settings" onclick="switchSection('settings', this)">Settings</a>
             </nav>
@@ -107,6 +110,158 @@
                         </div>
                         <button type="submit" class="btn btn-primary">Save Hero Section</button>
                     </form>
+                </div>
+            </div>
+
+            <!-- About Section Editor -->
+            <div id="section-about" class="section-content">
+                <div class="card">
+                    <h3>About Section</h3>
+                    <form id="about-form" onsubmit="return saveAbout(event)">
+                        <div class="form-group">
+                            <label>About Description</label>
+                            <textarea id="about-description" rows="5" placeholder="Write about yourself..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>About Photo</label>
+                            <div class="image-upload-area">
+                                <img id="about-photo-preview" class="img-preview" src="" alt="Preview" style="display:none;">
+                                <input type="file" id="about-photo-input" accept="image/*" onchange="previewImage(this, 'about-photo-preview')">
+                                <button type="button" class="btn btn-secondary" onclick="uploadAboutPhoto()">Upload Photo</button>
+                                <span id="about-photo-status" style="color:#888;font-size:0.9em;"></span>
+                                <input type="hidden" id="about-photo-url">
+                            </div>
+                        </div>
+                        <h4 style="margin:18px 0 10px;">Stats</h4>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                            <div class="form-group">
+                                <label>Stat 1 Value</label>
+                                <input type="number" id="about-stat1-value" min="0" placeholder="20">
+                            </div>
+                            <div class="form-group">
+                                <label>Stat 1 Label</label>
+                                <input type="text" id="about-stat1-label" placeholder="Projects Completed">
+                            </div>
+                            <div class="form-group">
+                                <label>Stat 2 Value</label>
+                                <input type="number" id="about-stat2-value" min="0" placeholder="2">
+                            </div>
+                            <div class="form-group">
+                                <label>Stat 2 Label</label>
+                                <input type="text" id="about-stat2-label" placeholder="Years Experience">
+                            </div>
+                            <div class="form-group">
+                                <label>Stat 3 Value</label>
+                                <input type="number" id="about-stat3-value" min="0" placeholder="15">
+                            </div>
+                            <div class="form-group">
+                                <label>Stat 3 Label</label>
+                                <input type="text" id="about-stat3-label" placeholder="Happy Clients">
+                            </div>
+                            <div class="form-group">
+                                <label>Stat 4 Value</label>
+                                <input type="number" id="about-stat4-value" min="0" placeholder="10">
+                            </div>
+                            <div class="form-group">
+                                <label>Stat 4 Label</label>
+                                <input type="text" id="about-stat4-label" placeholder="Technologies">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save About Section</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Services Section Editor -->
+            <div id="section-services" class="section-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Services</h3>
+                        <button class="btn btn-primary" onclick="openServiceForm()">+ Add Service</button>
+                    </div>
+                    <div id="services-list" class="items-list">
+                        <!-- Dynamic service cards -->
+                    </div>
+                </div>
+
+                <!-- Service Form Modal -->
+                <div id="service-form-modal" class="admin-modal" style="display:none;">
+                    <div class="admin-modal-content modal-sm">
+                        <span class="admin-modal-close" onclick="closeServiceForm()">&times;</span>
+                        <h3 id="service-form-title">Add Service</h3>
+                        <form id="service-form" onsubmit="return saveService(event)">
+                            <input type="hidden" id="service-edit-id">
+                            <div class="form-group">
+                                <label>Service Title</label>
+                                <input type="text" id="service-title" required placeholder="e.g. Web Development">
+                            </div>
+                            <div class="form-group">
+                                <label>Description</label>
+                                <textarea id="service-description" rows="3" required placeholder="Describe the service..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Icon (SVG HTML or emoji)</label>
+                                <textarea id="service-icon" rows="3" placeholder="Paste SVG code or an emoji like 🌐"></textarea>
+                                <small>Paste an SVG icon or use an emoji. This will display as the service icon.</small>
+                            </div>
+                            <div class="form-group">
+                                <label>Display Order</label>
+                                <input type="number" id="service-order" value="0" min="0">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Service</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Testimonials Section Editor -->
+            <div id="section-testimonials" class="section-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Testimonials / Reviews</h3>
+                        <button class="btn btn-primary" onclick="openTestimonialForm()">+ Add Testimonial</button>
+                    </div>
+                    <div id="testimonials-list" class="items-list">
+                        <!-- Dynamic testimonial cards -->
+                    </div>
+                </div>
+
+                <!-- Testimonial Form Modal -->
+                <div id="testimonial-form-modal" class="admin-modal" style="display:none;">
+                    <div class="admin-modal-content modal-sm">
+                        <span class="admin-modal-close" onclick="closeTestimonialForm()">&times;</span>
+                        <h3 id="testimonial-form-title">Add Testimonial</h3>
+                        <form id="testimonial-form" onsubmit="return saveTestimonial(event)">
+                            <input type="hidden" id="testimonial-edit-id">
+                            <div class="form-group">
+                                <label>Person Name</label>
+                                <input type="text" id="testimonial-name" required placeholder="John Doe">
+                            </div>
+                            <div class="form-group">
+                                <label>Role / Title</label>
+                                <input type="text" id="testimonial-role" placeholder="CEO, Company">
+                            </div>
+                            <div class="form-group">
+                                <label>Quote / Review</label>
+                                <textarea id="testimonial-quote" rows="4" required placeholder="What they said about your work..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Avatar Photo</label>
+                                <div class="image-upload-area">
+                                    <img id="testimonial-avatar-preview" class="img-preview small" src="" alt="Preview" style="display:none;">
+                                    <input type="file" id="testimonial-avatar-input" accept="image/*" onchange="previewImage(this, 'testimonial-avatar-preview')">
+                                    <button type="button" class="btn btn-secondary btn-sm" onclick="uploadTestimonialAvatar()">Upload Avatar</button>
+                                    <span id="testimonial-avatar-status" style="color:#888;font-size:0.9em;"></span>
+                                    <input type="hidden" id="testimonial-avatar-url">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Display Order</label>
+                                <input type="number" id="testimonial-order" value="0" min="0">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Testimonial</button>
+                        </form>
+                    </div>
                 </div>
             </div>
 

@@ -34,17 +34,53 @@ document.addEventListener('DOMContentLoaded', function() {
 	// Load dynamic data from Firebase
 	loadPortfolioData();
 
-	// View Projects smooth scroll
-	const btn = document.getElementById('view-projects-btn');
-	if (btn) {
-		btn.addEventListener('click', function(e) {
-			const target = document.getElementById('projects');
+	// Mobile menu toggle
+	const menuBtn = document.getElementById('mobile-menu-btn');
+	const headerNav = document.getElementById('header-nav');
+	if (menuBtn && headerNav) {
+		menuBtn.addEventListener('click', function() {
+			menuBtn.classList.toggle('active');
+			headerNav.classList.toggle('open');
+		});
+		// Close menu when a nav link is clicked
+		headerNav.querySelectorAll('.nav-links a').forEach(link => {
+			link.addEventListener('click', function() {
+				menuBtn.classList.remove('active');
+				headerNav.classList.remove('open');
+			});
+		});
+	}
+
+	// Smooth scroll for all anchor links
+	document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+		anchor.addEventListener('click', function(e) {
+			const targetId = this.getAttribute('href').substring(1);
+			const target = document.getElementById(targetId);
 			if (target) {
 				e.preventDefault();
 				target.scrollIntoView({ behavior: 'smooth', block: 'start' });
 			}
 		});
-	}
+	});
+
+	// Active nav link on scroll
+	const sections = document.querySelectorAll('section[id]');
+	const navLinks = document.querySelectorAll('.nav-links a');
+	window.addEventListener('scroll', function() {
+		let current = '';
+		sections.forEach(section => {
+			const sectionTop = section.offsetTop - 100;
+			if (window.scrollY >= sectionTop) {
+				current = section.getAttribute('id');
+			}
+		});
+		navLinks.forEach(link => {
+			link.classList.remove('active');
+			if (link.getAttribute('href') === '#' + current) {
+				link.classList.add('active');
+			}
+		});
+	});
 });
 
 // ---------- Load All Portfolio Data ----------
@@ -55,7 +91,10 @@ async function loadPortfolioData() {
 			loadProjectsData(),
 			loadSkillsData(),
 			loadContactData(),
-			loadSettingsData()
+			loadSettingsData(),
+			loadAboutData(),
+			loadServicesData(),
+			loadTestimonialsData()
 		]);
 	} catch (err) {
 		console.error('Error loading portfolio data:', err);
@@ -153,18 +192,30 @@ async function loadProjectsData() {
 				const card = document.createElement('div');
 				card.className = 'project-card';
 				const liveBtn = d.liveUrl && d.status === 'live'
-					? `<a href="${escapeHtml(d.liveUrl)}" target="_blank" class="live-btn">Live Demo</a>`
+					? `<a href="${escapeHtml(d.liveUrl)}" target="_blank" class="live-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> Live Demo</a>`
 					: '';
 				const statusBadge = d.status === 'live'
 					? '<span class="status-badge live">● Live</span>'
 					: '<span class="status-badge not-live">○ Not Live</span>';
+				const descText = (d.desc || '').length > 120 ? d.desc.substring(0, 120) + '...' : (d.desc || '');
 				card.innerHTML = `
-					${thumb ? `<img src="${escapeHtml(thumb)}" alt="${escapeHtml(d.title)}" class="project-thumb">` : ''}
-					<h3>${escapeHtml(d.title)} ${statusBadge}</h3>
-					<p>${nlToBr(d.desc)}</p>
-					<div class="project-card-actions">
-						${liveBtn}
-						<button class="details-btn" onclick="openProjectModal('${id}')">More Details</button>
+					<div class="project-card-image">
+						${thumb ? `<img src="${escapeHtml(thumb)}" alt="${escapeHtml(d.title)}" class="project-thumb">` : '<div class="project-thumb-placeholder"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>'}
+						<div class="project-card-overlay">
+							<button class="overlay-btn" onclick="openProjectModal('${id}')">View Details</button>
+						</div>
+						${d.status === 'live' ? '<span class="project-live-indicator">● Live</span>' : ''}
+					</div>
+					<div class="project-card-body">
+						<h3>${escapeHtml(d.title)}</h3>
+						<p>${escapeHtml(descText)}</p>
+						<div class="project-card-actions">
+							${liveBtn}
+							<button class="details-btn" onclick="openProjectModal('${id}')">
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+								More Details
+							</button>
+						</div>
 					</div>
 				`;
 				container.appendChild(card);
@@ -183,19 +234,22 @@ function showAllProjects() {
 	Object.entries(projectData).forEach(([id, data]) => {
 		const thumb = data.images && data.images[0] ? data.images[0] : '';
 		const liveBtn2 = data.liveUrl && data.status === 'live'
-			? `<a href="${escapeHtml(data.liveUrl)}" target="_blank" class="live-btn">Live Demo</a>`
+			? `<a href="${escapeHtml(data.liveUrl)}" target="_blank" class="live-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> Live</a>`
 			: '';
-		const statusBadge2 = data.status === 'live'
-			? '<span class="status-badge live">● Live</span>'
-			: '<span class="status-badge not-live">○ Not Live</span>';
+		const descText = (data.desc || '').length > 80 ? data.desc.substring(0, 80) + '...' : (data.desc || '');
 		html += `
 			<div class="see-all-card">
-				${thumb ? `<img src="${escapeHtml(thumb)}" class="see-all-thumb" alt="${escapeHtml(data.title)}">` : ''}
-				<h4>${escapeHtml(data.title)} ${statusBadge2}</h4>
-				<p>${nlToBr(data.desc)}</p>
-				<div class="project-card-actions">
-					${liveBtn2}
-					<button class="details-btn" onclick="openProjectModal('${id}')">More Details</button>
+				<div class="see-all-card-image">
+					${thumb ? `<img src="${escapeHtml(thumb)}" class="see-all-thumb" alt="${escapeHtml(data.title)}">` : ''}
+					${data.status === 'live' ? '<span class="project-live-indicator">● Live</span>' : ''}
+				</div>
+				<div class="see-all-card-body">
+					<h4>${escapeHtml(data.title)}</h4>
+					<p>${escapeHtml(descText)}</p>
+					<div class="project-card-actions">
+						${liveBtn2}
+						<button class="details-btn" onclick="openProjectModal('${id}')">Details</button>
+					</div>
 				</div>
 			</div>
 		`;
@@ -228,7 +282,10 @@ function openProjectModal(id) {
 	body.innerHTML = `
 		${mainImg ? `<img src="${escapeHtml(mainImg)}" class="modal-main-img" id="modal-main-img">` : ''}
 		<div class="modal-gallery">${gallery}</div>
-		<h3>${escapeHtml(data.title)} ${modalStatus}</h3>
+		<div class="modal-header-row">
+			<h3>${escapeHtml(data.title)}</h3>
+			${modalStatus}
+		</div>
 		<div class="project-detail-text">${nlToBr(data.details)}</div>
 		${modalLiveBtn}
 	`;
@@ -393,5 +450,129 @@ async function loadSettingsData() {
 		if (footerEl && d.footer) footerEl.textContent = d.footer;
 	} catch (err) {
 		console.error('Error loading settings:', err);
+	}
+}
+
+// ---------- Stat Counter Animation ----------
+function initStatCounters() {
+	const statNumbers = document.querySelectorAll('.stat-number');
+	if (!statNumbers.length) return;
+	const counterObserver = new IntersectionObserver((entries) => {
+		entries.forEach(entry => {
+			if (entry.isIntersecting) {
+				const el = entry.target;
+				const target = parseInt(el.getAttribute('data-target'), 10);
+				if (isNaN(target) || target === 0 || el.dataset.counted) return;
+				el.dataset.counted = 'true';
+				let current = 0;
+				const step = Math.max(1, Math.floor(target / 40));
+				const timer = setInterval(() => {
+					current += step;
+					if (current >= target) {
+						current = target;
+						clearInterval(timer);
+					}
+					el.textContent = current + '+';
+				}, 30);
+				counterObserver.unobserve(el);
+			}
+		});
+	}, { threshold: 0.5 });
+	statNumbers.forEach(el => counterObserver.observe(el));
+}
+
+// ---------- About Section ----------
+async function loadAboutData() {
+	try {
+		const doc = await db.collection('portfolio').doc('about').get();
+		if (!doc.exists) return;
+		const d = doc.data();
+
+		const descEl = document.getElementById('about-description');
+		if (descEl && d.description) {
+			const paragraphs = d.description.split('\n').filter(p => p.trim());
+			if (paragraphs.length > 1) {
+				descEl.innerHTML = paragraphs.map(p => '<p>' + escapeHtml(p) + '</p>').join('');
+			} else {
+				descEl.innerHTML = '<p>' + escapeHtml(d.description) + '</p>';
+			}
+		}
+
+		const imgEl = document.getElementById('about-photo');
+		if (imgEl && d.photo) {
+			imgEl.src = d.photo;
+			imgEl.style.display = 'block';
+		}
+
+		// Update stat counters if provided
+		if (d.stats && Array.isArray(d.stats)) {
+			const statItems = document.querySelectorAll('.stat-item');
+			d.stats.forEach((stat, i) => {
+				if (statItems[i]) {
+					const numEl = statItems[i].querySelector('.stat-number');
+					const labelEl = statItems[i].querySelector('.stat-label');
+					if (numEl && stat.value != null) numEl.setAttribute('data-target', stat.value);
+					if (labelEl && stat.label) labelEl.textContent = stat.label;
+				}
+			});
+		}
+
+		// Start counter animation after data is loaded
+		initStatCounters();
+	} catch (err) {
+		console.error('Error loading about:', err);
+	}
+}
+
+// ---------- Services Section ----------
+async function loadServicesData() {
+	try {
+		const snap = await db.collection('portfolio').doc('services').collection('items').orderBy('order').get();
+		const container = document.getElementById('services-grid');
+		if (!container || snap.empty) return;
+
+		container.innerHTML = '';
+		snap.forEach(doc => {
+			const d = doc.data();
+			const card = document.createElement('div');
+			card.className = 'service-card';
+			card.innerHTML = `
+				<div class="service-icon">${d.icon || ''}</div>
+				<h3>${escapeHtml(d.title)}</h3>
+				<p>${escapeHtml(d.description)}</p>
+			`;
+			container.appendChild(card);
+		});
+	} catch (err) {
+		console.error('Error loading services:', err);
+	}
+}
+
+// ---------- Testimonials Section ----------
+async function loadTestimonialsData() {
+	try {
+		const snap = await db.collection('portfolio').doc('testimonials').collection('items').orderBy('order').get();
+		const container = document.getElementById('testimonials-grid');
+		if (!container || snap.empty) return;
+
+		container.innerHTML = '';
+		snap.forEach(doc => {
+			const d = doc.data();
+			const card = document.createElement('div');
+			card.className = 'testimonial-card';
+			card.innerHTML = `
+				<p>"${escapeHtml(d.quote)}"</p>
+				<div class="testimonial-author">
+					${d.avatar ? `<img src="${escapeHtml(d.avatar)}" alt="${escapeHtml(d.name)}" class="testimonial-avatar">` : '<div class="testimonial-avatar"></div>'}
+					<div>
+						<strong>${escapeHtml(d.name)}</strong>
+						<span>${escapeHtml(d.role || '')}</span>
+					</div>
+				</div>
+			`;
+			container.appendChild(card);
+		});
+	} catch (err) {
+		console.error('Error loading testimonials:', err);
 	}
 }

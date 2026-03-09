@@ -738,19 +738,308 @@ function loadSettings(data) {
     document.getElementById('settings-footer').value = data.footer || '';
 }
 
+// ---------- About Section ----------
+async function uploadAboutPhoto() {
+    const input = document.getElementById('about-photo-input');
+    if (!input.files[0]) { showToast('Select a photo first', 'error'); return; }
+    const statusEl = document.getElementById('about-photo-status');
+    const preview = document.getElementById('about-photo-preview');
+    statusEl.textContent = 'Uploading...';
+
+    try {
+        const url = await uploadToCloudinary(input.files[0]);
+        document.getElementById('about-photo-url').value = url;
+        preview.src = url;
+        preview.style.display = 'block';
+        statusEl.textContent = '';
+
+        await db.collection('portfolio').doc('about').set({ photo: url }, { merge: true });
+        showToast('About photo uploaded & saved!', 'success');
+    } catch (err) {
+        statusEl.textContent = '';
+        showToast('Upload failed: ' + err.message, 'error');
+    }
+    input.value = '';
+}
+
+async function saveAbout(e) {
+    e.preventDefault();
+    const data = {
+        description: document.getElementById('about-description').value,
+        photo: document.getElementById('about-photo-url').value,
+        stats: [
+            { value: parseInt(document.getElementById('about-stat1-value').value) || 0, label: document.getElementById('about-stat1-label').value },
+            { value: parseInt(document.getElementById('about-stat2-value').value) || 0, label: document.getElementById('about-stat2-label').value },
+            { value: parseInt(document.getElementById('about-stat3-value').value) || 0, label: document.getElementById('about-stat3-label').value },
+            { value: parseInt(document.getElementById('about-stat4-value').value) || 0, label: document.getElementById('about-stat4-label').value }
+        ]
+    };
+
+    try {
+        await db.collection('portfolio').doc('about').set(data, { merge: true });
+        showToast('About section saved!', 'success');
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+    return false;
+}
+
+function loadAbout(data) {
+    if (!data) return;
+    document.getElementById('about-description').value = data.description || '';
+    document.getElementById('about-photo-url').value = data.photo || '';
+    if (data.photo) {
+        const preview = document.getElementById('about-photo-preview');
+        preview.src = data.photo;
+        preview.style.display = 'block';
+    }
+    if (data.stats && Array.isArray(data.stats)) {
+        data.stats.forEach((stat, i) => {
+            const idx = i + 1;
+            const valEl = document.getElementById('about-stat' + idx + '-value');
+            const labEl = document.getElementById('about-stat' + idx + '-label');
+            if (valEl) valEl.value = stat.value || '';
+            if (labEl) labEl.value = stat.label || '';
+        });
+    }
+}
+
+// ---------- Services ----------
+function openServiceForm(editId) {
+    document.getElementById('service-form').reset();
+    document.getElementById('service-edit-id').value = '';
+    document.getElementById('service-form-title').textContent = 'Add Service';
+
+    if (editId) {
+        document.getElementById('service-form-title').textContent = 'Edit Service';
+        document.getElementById('service-edit-id').value = editId;
+        db.collection('portfolio').doc('services').collection('items').doc(editId).get().then(doc => {
+            if (doc.exists) {
+                const d = doc.data();
+                document.getElementById('service-title').value = d.title || '';
+                document.getElementById('service-description').value = d.description || '';
+                document.getElementById('service-icon').value = d.icon || '';
+                document.getElementById('service-order').value = d.order || 0;
+            }
+        });
+    }
+    document.getElementById('service-form-modal').style.display = 'flex';
+}
+
+function closeServiceForm() {
+    document.getElementById('service-form-modal').style.display = 'none';
+}
+
+async function saveService(e) {
+    e.preventDefault();
+    const editId = document.getElementById('service-edit-id').value;
+    const data = {
+        title: document.getElementById('service-title').value,
+        description: document.getElementById('service-description').value,
+        icon: document.getElementById('service-icon').value,
+        order: parseInt(document.getElementById('service-order').value) || 0
+    };
+
+    try {
+        const collection = db.collection('portfolio').doc('services').collection('items');
+        if (editId) {
+            await collection.doc(editId).update(data);
+        } else {
+            await collection.add(data);
+        }
+        showToast('Service saved!', 'success');
+        closeServiceForm();
+        loadServices();
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+    return false;
+}
+
+async function deleteService(id) {
+    if (!confirm('Delete this service?')) return;
+    try {
+        await db.collection('portfolio').doc('services').collection('items').doc(id).delete();
+        showToast('Service deleted', 'success');
+        loadServices();
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+}
+
+async function loadServices() {
+    const container = document.getElementById('services-list');
+    container.innerHTML = '<p style="color:#888;">Loading...</p>';
+    try {
+        const snap = await db.collection('portfolio').doc('services').collection('items').orderBy('order').get();
+        if (snap.empty) {
+            container.innerHTML = '<p style="color:#888;">No services yet. Click "+ Add Service" to create one.</p>';
+            return;
+        }
+        container.innerHTML = '';
+        snap.forEach(doc => {
+            const d = doc.data();
+            const card = document.createElement('div');
+            card.className = 'item-card';
+            card.innerHTML = `
+                <div class="item-card-info">
+                    <h4>${escapeHtml(d.title)}</h4>
+                    <p>${escapeHtml((d.description || '').substring(0, 100))}...</p>
+                </div>
+                <div class="item-card-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="openServiceForm('${doc.id}')">Edit</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteService('${doc.id}')">Delete</button>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    } catch (err) {
+        container.innerHTML = '<p style="color:#e74c3c;">Error loading services.</p>';
+    }
+}
+
+// ---------- Testimonials ----------
+function openTestimonialForm(editId) {
+    document.getElementById('testimonial-form').reset();
+    document.getElementById('testimonial-edit-id').value = '';
+    document.getElementById('testimonial-avatar-preview').style.display = 'none';
+    document.getElementById('testimonial-avatar-url').value = '';
+    document.getElementById('testimonial-form-title').textContent = 'Add Testimonial';
+
+    if (editId) {
+        document.getElementById('testimonial-form-title').textContent = 'Edit Testimonial';
+        document.getElementById('testimonial-edit-id').value = editId;
+        db.collection('portfolio').doc('testimonials').collection('items').doc(editId).get().then(doc => {
+            if (doc.exists) {
+                const d = doc.data();
+                document.getElementById('testimonial-name').value = d.name || '';
+                document.getElementById('testimonial-role').value = d.role || '';
+                document.getElementById('testimonial-quote').value = d.quote || '';
+                document.getElementById('testimonial-order').value = d.order || 0;
+                document.getElementById('testimonial-avatar-url').value = d.avatar || '';
+                if (d.avatar) {
+                    const preview = document.getElementById('testimonial-avatar-preview');
+                    preview.src = d.avatar;
+                    preview.style.display = 'block';
+                }
+            }
+        });
+    }
+    document.getElementById('testimonial-form-modal').style.display = 'flex';
+}
+
+function closeTestimonialForm() {
+    document.getElementById('testimonial-form-modal').style.display = 'none';
+}
+
+async function uploadTestimonialAvatar() {
+    const input = document.getElementById('testimonial-avatar-input');
+    if (!input.files[0]) { showToast('Select an image first', 'error'); return; }
+    const statusEl = document.getElementById('testimonial-avatar-status');
+    const preview = document.getElementById('testimonial-avatar-preview');
+    statusEl.textContent = 'Uploading...';
+
+    try {
+        const url = await uploadToCloudinary(input.files[0]);
+        document.getElementById('testimonial-avatar-url').value = url;
+        preview.src = url;
+        preview.style.display = 'block';
+        statusEl.textContent = '';
+        showToast('Avatar uploaded!', 'success');
+    } catch (err) {
+        statusEl.textContent = '';
+        showToast('Upload failed: ' + err.message, 'error');
+    }
+    input.value = '';
+}
+
+async function saveTestimonial(e) {
+    e.preventDefault();
+    const editId = document.getElementById('testimonial-edit-id').value;
+    const data = {
+        name: document.getElementById('testimonial-name').value,
+        role: document.getElementById('testimonial-role').value,
+        quote: document.getElementById('testimonial-quote').value,
+        avatar: document.getElementById('testimonial-avatar-url').value,
+        order: parseInt(document.getElementById('testimonial-order').value) || 0
+    };
+
+    try {
+        const collection = db.collection('portfolio').doc('testimonials').collection('items');
+        if (editId) {
+            await collection.doc(editId).update(data);
+        } else {
+            await collection.add(data);
+        }
+        showToast('Testimonial saved!', 'success');
+        closeTestimonialForm();
+        loadTestimonials();
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+    return false;
+}
+
+async function deleteTestimonial(id) {
+    if (!confirm('Delete this testimonial?')) return;
+    try {
+        await db.collection('portfolio').doc('testimonials').collection('items').doc(id).delete();
+        showToast('Testimonial deleted', 'success');
+        loadTestimonials();
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+}
+
+async function loadTestimonials() {
+    const container = document.getElementById('testimonials-list');
+    container.innerHTML = '<p style="color:#888;">Loading...</p>';
+    try {
+        const snap = await db.collection('portfolio').doc('testimonials').collection('items').orderBy('order').get();
+        if (snap.empty) {
+            container.innerHTML = '<p style="color:#888;">No testimonials yet. Click "+ Add Testimonial" to create one.</p>';
+            return;
+        }
+        container.innerHTML = '';
+        snap.forEach(doc => {
+            const d = doc.data();
+            const card = document.createElement('div');
+            card.className = 'item-card';
+            card.innerHTML = `
+                ${d.avatar ? `<img src="${sanitizeAttr(d.avatar)}" class="item-card-img" alt="" style="width:48px;height:48px;border-radius:50%;object-fit:cover;">` : ''}
+                <div class="item-card-info">
+                    <h4>${escapeHtml(d.name)} <small style="color:#888;font-weight:400;">${escapeHtml(d.role || '')}</small></h4>
+                    <p>"${escapeHtml((d.quote || '').substring(0, 80))}..."</p>
+                </div>
+                <div class="item-card-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="openTestimonialForm('${doc.id}')">Edit</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteTestimonial('${doc.id}')">Delete</button>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    } catch (err) {
+        container.innerHTML = '<p style="color:#e74c3c;">Error loading testimonials.</p>';
+    }
+}
+
 // ---------- Load All Data ----------
 async function loadAllData() {
     try {
-        const [heroDoc, contactDoc, settingsDoc] = await Promise.all([
+        const [heroDoc, contactDoc, settingsDoc, aboutDoc] = await Promise.all([
             db.collection('portfolio').doc('hero').get(),
             db.collection('portfolio').doc('contact').get(),
-            db.collection('portfolio').doc('settings').get()
+            db.collection('portfolio').doc('settings').get(),
+            db.collection('portfolio').doc('about').get()
         ]);
         loadHero(heroDoc.exists ? heroDoc.data() : null);
         loadContact(contactDoc.exists ? contactDoc.data() : null);
         loadSettings(settingsDoc.exists ? settingsDoc.data() : null);
+        loadAbout(aboutDoc.exists ? aboutDoc.data() : null);
         loadProjects();
         loadSkills();
+        loadServices();
+        loadTestimonials();
     } catch (err) {
         showToast('Error loading data: ' + err.message, 'error');
     }
@@ -828,6 +1117,41 @@ async function seedDefaultData() {
             title: "My Portfolio",
             footer: "© 2026 Ashish Biswas. All rights reserved."
         });
+
+        // About
+        await db.collection('portfolio').doc('about').set({
+            description: "I'm a passionate developer who loves building software that solves real-world problems. With a strong foundation in web development, desktop applications, and 2D game development, I bring ideas to life through clean code and creative design. I'm always learning and exploring new technologies to stay ahead in this ever-evolving field.",
+            photo: "img/myphoto.png",
+            stats: [
+                { value: 20, label: "Projects Completed" },
+                { value: 2, label: "Years Experience" },
+                { value: 15, label: "Happy Clients" },
+                { value: 10, label: "Technologies" }
+            ]
+        });
+
+        // Services
+        const serviceRef = db.collection('portfolio').doc('services').collection('items');
+        const services = [
+            { title: "Web Development", description: "Building responsive, high-performance websites and web apps using modern frameworks and best practices.", icon: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>', order: 1 },
+            { title: "Software Development", description: "Creating robust desktop applications tailored to your business needs with scalable architecture.", icon: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>', order: 2 },
+            { title: "Game Development", description: "Designing fun and engaging 2D web games with smooth mechanics and immersive experiences.", icon: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="6" y1="11" x2="10" y2="11"/><line x1="8" y1="9" x2="8" y2="13"/><line x1="15" y1="12" x2="15.01" y2="12"/><line x1="18" y1="10" x2="18.01" y2="10"/><path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z"/></svg>', order: 3 },
+            { title: "UI/UX Design", description: "Crafting intuitive and beautiful user interfaces with seamless user experience across devices.", icon: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r="0.5"/><circle cx="17.5" cy="10.5" r="0.5"/><circle cx="8.5" cy="7.5" r="0.5"/><circle cx="6.5" cy="12.5" r="0.5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>', order: 4 }
+        ];
+        for (const service of services) {
+            await serviceRef.add(service);
+        }
+
+        // Testimonials
+        const testimonialRef = db.collection('portfolio').doc('testimonials').collection('items');
+        const testimonials = [
+            { name: "Rahim Uddin", role: "Business Owner", quote: "Ashish built an amazing website for my business. Professional work and great communication throughout the project!", avatar: "", order: 1 },
+            { name: "Fatima Ahmed", role: "Startup Founder", quote: "Excellent developer! He delivered the project on time with exceptional quality. Highly recommend his services.", avatar: "", order: 2 },
+            { name: "Kamal Hossain", role: "Student", quote: "Ashish helped me create my portfolio website. Very patient and skilled developer. The result exceeded my expectations!", avatar: "", order: 3 }
+        ];
+        for (const testimonial of testimonials) {
+            await testimonialRef.add(testimonial);
+        }
 
         showToast('Default data seeded successfully!', 'success');
         loadAllData();
